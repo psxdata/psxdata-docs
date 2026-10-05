@@ -119,9 +119,18 @@ psxdata.exceptions.PSXAuthError(PSXDataError)
 
 PSX returned an HTTP 401 (Unauthorized) or 403 (Forbidden) response. This indicates an authentication or authorisation failure.
 
-**Raised by:** all functions that make HTTP requests, immediately without retry.
+**Raised by:** all functions that make HTTP requests. A 401 raises immediately without retry. Since version 1.1.1, a 403 first triggers one retry with a refreshed `X-Req-Id` request token. psxdata raises `PSXAuthError` if that retry also fails.
 
-This error is uncommon for the public PSX data endpoints, but may occur if the PSX website changes access requirements or if a session token becomes invalid.
+Since 2026-09-24, PSX rejects data requests with a 403 unless they carry an `X-Req-Id` request token. psxdata 1.1.1 and later fetch, share, and refresh this token automatically. You don't need to change your code.
+
+If every call fails with `PSXAuthError` (403), check your installed version and upgrade to 1.1.1 or later:
+
+```bash
+pip show psxdata
+pip install --upgrade psxdata
+```
+
+Restart your Python session or kernel after upgrading so the new version loads. If the error persists on 1.1.1 or later, PSX may have changed its access requirements again. Retry later and report the issue if it continues.
 
 ---
 
