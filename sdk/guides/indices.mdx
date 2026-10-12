@@ -18,6 +18,13 @@ print(df.columns.tolist())
 print(df.head())
 ```
 
+<Note>
+  `indices()` returns the **current** constituent snapshot from PSX. It has no date
+  parameter and the result has no date column, so you can't fetch historical index
+  weights for a past date range. To build a history, save a dated snapshot on each
+  trading day, as shown in [Track index weights over time](#track-index-weights-over-time).
+</Note>
+
 ## Available indices
 
 Pass the index name as a string:
@@ -42,6 +49,26 @@ df = psxdata.indices("KSE100")
 top10 = df.nlargest(10, "idx_weight")[["symbol", "idx_weight", "market_cap_m"]]
 print(top10)
 ```
+
+## Track index weights over time
+
+Run this script once per trading day (for example, from a scheduled job) to append a dated snapshot of KSE-100 weights to a CSV file:
+
+```python
+import os
+from datetime import date
+
+import psxdata
+
+df = psxdata.indices("KSE100", cache=False)
+df = df[["symbol", "idx_weight"]].copy()
+df.insert(0, "date", date.today().isoformat())
+
+path = "kse100_weights.csv"
+df.to_csv(path, mode="a", header=not os.path.exists(path), index=False)
+```
+
+Pass `cache=False` so each run fetches fresh weights instead of a cached response.
 
 ## Get tickers for an index
 
