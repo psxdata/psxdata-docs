@@ -147,6 +147,10 @@ print(df.head())
 Returns a `pd.DataFrame`. Returns an empty `DataFrame` if no data is available for the
 given date range.
 
+The frame does not include a `symbol` column. When looping over multiple tickers, add
+it yourself (`df["symbol"] = sym`) before concatenating. See
+[Fetch multiple stocks](/sdk/guides/historical-data#fetch-multiple-stocks).
+
 <ResponseField name="date" type="datetime64[ns]" required>
   Trading date.
 </ResponseField>
@@ -349,7 +353,15 @@ all_tickers = psxdata.tickers()
 # KSE-100 constituents only
 kse100 = psxdata.tickers(index="KSE100")
 print(f"KSE-100 has {len(kse100)} stocks")
+
+# Iterate directly — tickers() returns a plain list[str], not a DataFrame
+for sym in kse100:
+    print(sym)
 ```
+
+If you need ticker + sector or other metadata as a DataFrame instead of a plain list,
+use [`psxdata.symbols()`](#psxdata-symbols) (all listed symbols) or
+[`psxdata.indices(name)`](#psxdata-indices) (index constituents with weights).
 
 `tickers(index="KSE100")` and `indices("KSE100")` share the same cache key
 (`indices_KSE100`), so calling both methods never results in a double network request.

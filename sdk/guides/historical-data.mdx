@@ -70,6 +70,38 @@ df.to_excel("engro_history.xlsx", index=False)
 
 ## Fetch multiple stocks
 
+`psxdata.tickers()` returns a plain `list[str]` of symbols, and `psxdata.stocks()` returns OHLCV without a `symbol` column. When you loop over tickers, add the symbol to each frame yourself before combining them.
+
+### Long-format DataFrame (one row per symbol per day)
+
+Useful when you want to filter, group, or export every symbol's history together.
+
+```python
+import psxdata
+import pandas as pd
+
+symbols = psxdata.tickers(index="KSE100")  # list[str]
+
+frames = []
+for sym in symbols:
+    try:
+        df = psxdata.stocks(sym, start="2021-01-01")
+    except Exception as exc:
+        print(f"Skipped {sym}: {exc}")
+        continue
+    df["symbol"] = sym
+    frames.append(df[["symbol", "date", "close", "volume"]])
+
+long_df = pd.concat(frames, ignore_index=True)
+print(long_df.head())
+```
+
+Wrap the call in `try` / `except` so one delisted or newly listed symbol does not stop the whole loop.
+
+### Wide close-price matrix (one column per symbol)
+
+Useful for correlation, portfolio, or index-construction work.
+
 ```python
 import psxdata
 import pandas as pd
@@ -77,10 +109,13 @@ import pandas as pd
 tickers = ["ENGRO", "LUCK", "HBL"]
 frames = {t: psxdata.stocks(t, start="2025-01-01") for t in tickers}
 
-# Build a close-price matrix
 close = pd.DataFrame({t: df.set_index("date")["close"] for t, df in frames.items()})
 print(close.tail())
 ```
+
+<Tip>
+  If you want ticker metadata alongside OHLCV (sector, market cap, and so on), call [`psxdata.symbols()`](/sdk/reference/client#psxdata-symbols) — that one returns a DataFrame with a `symbol` column you can merge onto the long-format frame above.
+</Tip>
 
 ## Bypass cache
 
