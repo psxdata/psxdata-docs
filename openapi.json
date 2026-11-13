@@ -1148,6 +1148,18 @@
               }
             ],
             "title": "Change Pct"
+          },
+          "traded_today": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Traded Today",
+            "description": "True if the stock has traded on PSX's regular-market board so far this session, false if not, null if unknown. PSX keeps delisted and non-trading stocks in its screener with their last trading day's price and change_pct."
           }
         },
         "type": "object",
@@ -1287,6 +1299,17 @@
             ],
             "title": "Volume Avg 30D"
           },
+          "change_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Pct"
+          },
           "change_1y_pct": {
             "anyOf": [
               {
@@ -1297,6 +1320,18 @@
               }
             ],
             "title": "Change 1Y Pct"
+          },
+          "traded_today": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Traded Today",
+            "description": "True if the stock has traded on PSX's regular-market board so far this session, false if not, null if unknown. Filter on it before ranking change_pct: PSX keeps delisted and non-trading stocks in its screener with their last trading day's move."
           }
         },
         "type": "object",
