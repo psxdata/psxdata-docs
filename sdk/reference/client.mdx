@@ -679,6 +679,37 @@ empty `dict` if no tables are found on the page.
   always use the string keys `"table_0"` through `"table_3"`.
 </Callout>
 
+Each DataFrame contains the following columns:
+
+| Column | Type | Description |
+|---|---|---|
+| `security_code` | `str` | PSX security code of the instrument. |
+| `security_name` | `str` | Instrument name. |
+| `face_value` | `float` | Face (par) value per unit, in PKR. |
+| `listing_date` | `datetime` | Date the instrument was listed on PSX. |
+| `issue_date` | `datetime` | Issue date. |
+| `issue_size` | `float` | Total issue size. |
+| `maturity_date` | `datetime` | Maturity date. |
+| `coupon_rate` | `float` | Coupon or rental rate, in percent. |
+| `prev_coupon_date` | `datetime` | Previous coupon or rental date. |
+| `next_coupon_date` | `datetime` | Next coupon or rental date. |
+| `outstanding_days` | `float` | Days remaining until maturity. |
+| `remaining_years` | `float` | Years remaining until maturity. |
+
+<Note>
+  `face_value` is only available for debt instruments. The equity functions (`stocks()`,
+  `quote()`, `screener()`, `fundamentals()`, `symbols()`) do not return a face value field
+  for listed stocks.
+</Note>
+
+```python
+import psxdata
+
+tables = psxdata.debt_market()
+df = tables["table_0"]
+print(df[["security_code", "security_name", "face_value", "maturity_date"]])
+```
+
 #### Exceptions
 
 | Exception | When raised |
