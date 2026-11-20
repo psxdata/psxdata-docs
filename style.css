@@ -5,3 +5,10 @@ img[src$="/images/mcp.svg"] {
   mask: url("/images/mcp.svg") center / contain no-repeat;
   object-position: -9999px 0;
 }
+
+/* Code blocks sit on the page like the rest of the content instead of on their own panel, so they follow the theme and its background gradient. */
+.code-block [class*="bg-codeblock"] {
+  --shiki-dark-bg: transparent !important;
+  --shiki-light-bg: transparent !important;
+  background-color: transparent !important;
+}

@@ -87,8 +87,11 @@ export const AgentPrompt = ({ agent }) => {
     ? `Set up psxdata in ${config.name}`
     : "Set up psxdata in your agent";
 
+  const ghost =
+    "flex items-center justify-center rounded-lg border cursor-pointer transition-colors duration-70 outline-offset-4 text-gray-700 dark:text-gray-300 hover:text-gray-950 dark:hover:text-gray-50 bg-transparent hover:bg-gray-950/5 dark:hover:bg-white/5 border-gray-950/10 dark:border-white/10";
+
   return (
-    <div className="agent-prompt my-6 rounded-2xl border p-4 border-gray-950/10 dark:border-white/10 bg-transparent text-sm/[20px] text-gray-950 tracking-[-0.1px] dark:text-gray-50 print:print-color-exact">
+    <div className="agent-prompt not-prose my-6 rounded-2xl border p-4 border-gray-950/10 dark:border-white/10 bg-transparent text-sm/[20px] text-gray-950 tracking-[-0.1px] dark:text-gray-50 print:print-color-exact">
       <div className="flex flex-wrap items-center gap-x-6 gap-y-4">
         <div className="flex items-center gap-2 font-medium">
           <Icon icon="clipboard" size={14} />
@@ -98,21 +101,26 @@ export const AgentPrompt = ({ agent }) => {
           <button
             type="button"
             onClick={() => setOpen(!open)}
-            className="px-2 py-1 flex items-center gap-1 justify-center rounded-lg border cursor-pointer transition-colors duration-70 outline-offset-4 text-xs/[16px] whitespace-nowrap font-medium no-underline text-gray-950 dark:text-gray-50 bg-transparent hover:bg-gray-950/5 dark:hover:bg-white/5 border-gray-950/10 dark:border-white/10"
+            aria-label={open ? "Hide prompt" : "Show prompt"}
+            title={open ? "Hide prompt" : "Show prompt"}
+            aria-expanded={open}
+            className={`${ghost} size-7`}
           >
-            {open ? "Hide prompt" : "Show prompt"}
+            <Icon icon={open ? "eye-slash" : "eye"} size={14} />
           </button>
           <button
             type="button"
             onClick={copy}
-            className="px-2 py-1 flex items-center gap-1 justify-center rounded-lg border cursor-pointer transition-colors duration-70 outline-offset-4 text-xs/[16px] whitespace-nowrap font-medium border-transparent bg-primary text-white hover:bg-primary-dark"
+            aria-label={copied ? "Copied" : "Copy prompt"}
+            title={copied ? "Copied" : "Copy prompt"}
+            className={`${ghost} size-7`}
           >
-            {copied ? "Copied" : "Copy prompt"}
+            <Icon icon={copied ? "check" : "copy"} size={14} />
           </button>
           {config.open && (
             <a
               href={config.open(text)}
-              className="px-2 py-1 flex items-center gap-1 justify-center rounded-lg border cursor-pointer transition-colors duration-70 outline-offset-4 text-xs/[16px] whitespace-nowrap font-medium no-underline text-gray-950 dark:text-gray-50 bg-transparent hover:bg-gray-950/5 dark:hover:bg-white/5 border-gray-950/10 dark:border-white/10"
+              className="h-7 px-2.5 flex items-center justify-center rounded-lg border cursor-pointer transition-colors duration-70 outline-offset-4 text-xs/[16px] whitespace-nowrap font-medium no-underline border-transparent bg-primary text-white hover:bg-primary-dark"
             >
               {`Open in ${config.name}`}
             </a>
@@ -120,7 +128,7 @@ export const AgentPrompt = ({ agent }) => {
         </div>
       </div>
       {open && (
-        <pre className="mt-4 mb-0 whitespace-pre-wrap rounded-xl border border-gray-950/10 dark:border-white/10 bg-gray-950/[0.02] dark:bg-white/[0.03] p-3 text-gray-950 dark:text-gray-50 text-xs/[18px] font-mono">
+        <pre className="mt-4 mb-0 whitespace-pre-wrap rounded-xl border border-gray-950/10 dark:border-white/10 bg-transparent p-3 text-gray-950 dark:text-gray-50 text-xs/[18px] font-mono">
           {text}
         </pre>
       )}
