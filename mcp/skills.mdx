@@ -1,0 +1,76 @@
+---
+title: "Skills"
+description: "Ready-made PSX analysis workflows that ship with the psxdata MCP server: stock tearsheet, screens, Shariah screen, comparisons and market wraps."
+---
+
+The server ships six analysis workflows. Each one is a written procedure the assistant follows step by step: which tables to load, which SQL to run, which data traps to check, and how to lay out the answer. They give you a consistent report instead of whatever the model improvises.
+
+| Skill | Arguments | What you get |
+|---|---|---|
+| [`tearsheet`](#tearsheet) | `symbol` (required) | One-page report on a stock: performance, risk, valuation against sector peers, filings, news |
+| [`screen`](#screen) | `criteria` (optional) | Value, dividend or momentum presets, or your own conditions, with red flags |
+| [`shariah-screen`](#shariah-screen) | `screen` (optional) | The same screens limited to KMI All-Share members, with purification notes |
+| [`compare`](#compare) | `symbols` (required), `period` (optional) | 2–10 stocks side by side: returns, risk, correlation, valuation, price path |
+| [`market-wrap`](#market-wrap) | `period` (optional) | Daily or weekly summary: KSE-100 drivers, breadth, sectors, movers, news |
+| [`psx-playbook`](#psx-playbook) | — | The rules every other skill follows |
+
+## How to run them
+
+The skills are served as **MCP prompts**, so they appear wherever your client lists prompts:
+
+| Client | How to run a skill |
+|---|---|
+| Claude Code (plugin) | Just ask, e.g. *"tearsheet for OGDC"*. Claude loads the matching skill on its own. |
+| Claude Code (server only) | `/mcp__psxdata__tearsheet OGDC` |
+| Claude Desktop | **+** menu in the message box → psxdata → pick the prompt and fill in the arguments |
+| VS Code (Copilot) | Type `/mcp.psxdata.tearsheet` in chat |
+| Other clients | Wherever the client shows MCP prompts, if it supports them |
+
+If your client doesn't support MCP prompts, asking in plain language still works: the assistant uses the same tools, it just won't follow the written procedure.
+
+Several skills use web search for context (news behind a move, the current SBP policy rate). If your assistant can search the web, those sections are filled in with cited sources; if not, the report says so and skips them.
+
+## tearsheet
+
+A one-page report on one PSX stock: returns over 1M to 1Y, 52-week range, max drawdown and volatility, average traded value, P/E, dividend yield and 1-year return against sector peers, the latest filings, and recent dividends and news.
+
+```text
+/mcp__psxdata__tearsheet OGDC
+```
+
+## screen
+
+Shortlists stocks that match a preset or your own conditions.
+
+- **`value`**: P/E well below the sector's, compared within each sector rather than against one cut-off.
+- **`dividend`**: high dividend yield among profitable companies, against the SBP policy rate when web search is available.
+- **`momentum`**: strong 1-year movers that are still rising over the last 3 months, checked for bonus and split distortions.
+- **Your own conditions**, for example *"banks with P/E under 6"* or *"KSE-100 names yielding over 12%"*.
+
+Each result row carries red flags: suspiciously low P/E, a 1-year fall of more than 50%, yields above 15%, missing P/E, non-compliance (`NC`) status, and stocks that just went ex-dividend or ex-bonus.
+
+## shariah-screen
+
+Runs the stock screen on Shariah-compliant names only, using the KMI All-Share Islamic Index (`KMIALLSHR`) as the universe, or `KMI30` / `MII30` if you ask for something stricter. With no argument it gives an overview of the compliant universe. The output includes purification and index-recomposition caveats.
+
+## compare
+
+Puts 2–10 stocks side by side over one period (`3M`, `6M`, `1Y` by default, `3Y` or `YTD`): total return, annualised volatility, max drawdown, return per unit of risk, pairwise correlation of daily returns, valuation, and a price path rebased to 100.
+
+```text
+/mcp__psxdata__compare OGDC, PPL, MARI 1Y
+```
+
+## market-wrap
+
+A summary of the PSX session (`today`, the default) or the last five trading days (`week`): the KSE-100 move and the constituents that drove it, market breadth, best and worst sectors, top movers and most-traded stocks, and the news behind the day. Stocks going ex-dividend or ex-bonus are marked, so their drop isn't read as selling.
+
+## psx-playbook
+
+The shared rulebook. The other five skills include it automatically; run it on its own before a free-form analysis to give the assistant the same rules. It covers:
+
+- **Data traps**: prices are unadjusted; P/E and dividend yield of `0` mean missing, not zero; tickers carry status suffixes (`LUCKXD`) that break naive joins; outliers to drop from medians.
+- **SQL patterns** for returns, volatility and drawdowns in DuckDB.
+- **Corporate-action check** before quoting any return that spans more than a few weeks.
+- **Web cross-checks** and how to cite them.
+- **Presenting results**: as-of times, units and caveats.

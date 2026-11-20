@@ -1,0 +1,281 @@
+---
+title: "Local setup"
+description: "Run the psxdata MCP server locally with Docker and connect it to Claude Code, Claude Desktop, Cursor, VS Code, Windsurf, Codex, Gemini CLI or any other MCP client."
+---
+
+The server runs on your machine as a Docker container that your MCP client starts on demand. You don't run it yourself or keep it running: you add one entry to your client's MCP config, and the client launches the container when a session starts and stops it when the session ends.
+
+## Before you start
+
+<Steps>
+  <Step title="Install Docker">
+    Install [Docker Desktop](https://docs.docker.com/get-docker/) (macOS, Windows) or Docker Engine (Linux), and make sure it's running:
+
+    ```bash
+    docker info
+    ```
+
+    If you're setting up Claude Desktop and don't want Docker, skip to the [one-click bundle](#claude-desktop), which uses uv instead.
+  </Step>
+  <Step title="Pull the image">
+    Optional, but it means the first session doesn't wait for the download:
+
+    ```bash
+    docker pull mtauha/psxdata-mcp:latest
+    ```
+  </Step>
+</Steps>
+
+Every client below runs the same command:
+
+```bash
+docker run -i --rm -v psxdata-cache:/home/app/.psxdata mtauha/psxdata-mcp:latest
+```
+
+| Part | Why |
+|---|---|
+| `-i` | Keeps stdin open. MCP clients talk to the server over stdin/stdout. |
+| `--rm` | Removes the container when the session ends. |
+| `-v psxdata-cache:/home/app/.psxdata` | Named volume for the historical price cache, so each symbol is downloaded once and reused across sessions. |
+| `mtauha/psxdata-mcp:latest` | The image. Pin a version such as `mtauha/psxdata-mcp:0.1.4` if you want updates only when you choose them. |
+
+<Warning>
+Don't add `-t`. A TTY corrupts the JSON-RPC stream and the client will fail to connect.
+</Warning>
+
+## Connect your client
+
+### Claude Code
+
+The plugin is the recommended route. It adds the server and the [skills](/mcp/skills), which Claude loads on its own when a request matches.
+
+```bash
+claude plugin marketplace add psxdata/psxdata-mcp
+```
+
+```bash
+claude plugin install psxdata@psxdata-mcp
+```
+
+Restart Claude Code, then run `/mcp` to check that `psxdata` is connected. The plugin pins the image version that matches the plugin release.
+
+To add only the server, without the skills:
+
+```bash
+claude mcp add --transport stdio --scope user psxdata -- docker run -i --rm -v psxdata-cache:/home/app/.psxdata mtauha/psxdata-mcp:latest
+```
+
+`--scope user` makes it available in every project. Use `--scope project` instead to write it to `.mcp.json` in the current repository, so everyone who clones it gets the server. Without the plugin, the skills are still available as prompts, for example `/mcp__psxdata__tearsheet OGDC`.
+
+### Claude Desktop
+
+<Tabs>
+  <Tab title="One-click bundle (no Docker)">
+    1. Install [uv](https://docs.astral.sh/uv/getting-started/installation/). The bundle uses it to fetch Python and the dependencies on first launch.
+    2. Download `psxdata-mcp-<version>.mcpb` from the [latest release](https://github.com/psxdata/psxdata-mcp/releases/latest).
+    3. Open the file, or drag it into **Settings → Extensions**, and confirm the install.
+
+    The first launch takes a few seconds longer than later ones while uv sets up the environment. If Claude Desktop reports that uv is missing, install it and restart Claude Desktop.
+  </Tab>
+  <Tab title="Docker">
+    Open **Settings → Developer → Edit Config** to open `claude_desktop_config.json`:
+
+    - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+    - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+
+    Add the server under `mcpServers`:
+
+    ```json claude_desktop_config.json
+    {
+      "mcpServers": {
+        "psxdata": {
+          "command": "docker",
+          "args": ["run", "-i", "--rm", "-v", "psxdata-cache:/home/app/.psxdata", "mtauha/psxdata-mcp:latest"]
+        }
+      }
+    }
+    ```
+
+    Quit Claude Desktop completely and reopen it. The psxdata tools appear under the tools menu in the message box.
+  </Tab>
+</Tabs>
+
+The skills show up as prompts in the **+** menu of the message box.
+
+### Cursor
+
+Paste this link into your browser to install with one click:
+
+```text
+cursor://anysphere.cursor-deeplink/mcp/install?name=psxdata&config=eyJjb21tYW5kIjoiZG9ja2VyIiwiYXJncyI6WyJydW4iLCItaSIsIi0tcm0iLCItdiIsInBzeGRhdGEtY2FjaGU6L2hvbWUvYXBwLy5wc3hkYXRhIiwibXRhdWhhL3BzeGRhdGEtbWNwOmxhdGVzdCJdfQ==
+```
+
+Or add it by hand to `~/.cursor/mcp.json` (all projects) or `.cursor/mcp.json` (one project):
+
+```json mcp.json
+{
+  "mcpServers": {
+    "psxdata": {
+      "command": "docker",
+      "args": ["run", "-i", "--rm", "-v", "psxdata-cache:/home/app/.psxdata", "mtauha/psxdata-mcp:latest"]
+    }
+  }
+}
+```
+
+Check **Cursor Settings → MCP** for a green status next to `psxdata`, then ask in Agent mode.
+
+### VS Code (GitHub Copilot)
+
+[Install psxdata in VS Code](https://vscode.dev/redirect/mcp/install?name=psxdata&config=%7B%22command%22%3A%22docker%22%2C%22args%22%3A%5B%22run%22%2C%22-i%22%2C%22--rm%22%2C%22-v%22%2C%22psxdata-cache%3A%2Fhome%2Fapp%2F.psxdata%22%2C%22mtauha%2Fpsxdata-mcp%3Alatest%22%5D%7D) with one click, or add it to `.vscode/mcp.json` in your workspace. Note that VS Code uses `servers`, not `mcpServers`:
+
+```json .vscode/mcp.json
+{
+  "servers": {
+    "psxdata": {
+      "type": "stdio",
+      "command": "docker",
+      "args": ["run", "-i", "--rm", "-v", "psxdata-cache:/home/app/.psxdata", "mtauha/psxdata-mcp:latest"]
+    }
+  }
+}
+```
+
+To make it available in every workspace, run **MCP: Open User Configuration** from the Command Palette and add the same entry there. Open Copilot Chat in **Agent** mode and check the tools picker for the psxdata tools. The skills are available as `/mcp.psxdata.<skill>` prompts in chat.
+
+### Windsurf
+
+Open **Windsurf Settings → Cascade → MCP Servers → View raw config**, which opens `~/.codeium/windsurf/mcp_config.json`, and add:
+
+```json mcp_config.json
+{
+  "mcpServers": {
+    "psxdata": {
+      "command": "docker",
+      "args": ["run", "-i", "--rm", "-v", "psxdata-cache:/home/app/.psxdata", "mtauha/psxdata-mcp:latest"]
+    }
+  }
+}
+```
+
+Refresh the MCP server list in Cascade.
+
+### OpenAI Codex
+
+Add it from the command line:
+
+```bash
+codex mcp add psxdata -- docker run -i --rm -v psxdata-cache:/home/app/.psxdata mtauha/psxdata-mcp:latest
+```
+
+Or add it to `~/.codex/config.toml` by hand:
+
+```toml ~/.codex/config.toml
+[mcp_servers.psxdata]
+command = "docker"
+args = ["run", "-i", "--rm", "-v", "psxdata-cache:/home/app/.psxdata", "mtauha/psxdata-mcp:latest"]
+```
+
+The Codex CLI and the Codex IDE extension share this file. Run `/mcp` in the CLI to confirm the server is listed.
+
+### Gemini CLI
+
+Add it from the command line:
+
+```bash
+gemini mcp add --scope user psxdata -- docker run -i --rm -v psxdata-cache:/home/app/.psxdata mtauha/psxdata-mcp:latest
+```
+
+The `--` stops Gemini CLI from reading Docker's `-i` flag as its own. Drop `--scope user` to add the server to the current project only. Or add it to `~/.gemini/settings.json` (all projects) or `.gemini/settings.json` (one project):
+
+```json settings.json
+{
+  "mcpServers": {
+    "psxdata": {
+      "command": "docker",
+      "args": ["run", "-i", "--rm", "-v", "psxdata-cache:/home/app/.psxdata", "mtauha/psxdata-mcp:latest"]
+    }
+  }
+}
+```
+
+Run `/mcp` inside Gemini CLI to see the server and its tools.
+
+### Any other client
+
+Most MCP clients (Cline, Roo Code, Zed, Continue, LM Studio, Goose and others) accept a stdio server defined by a command and its arguments. Use:
+
+- **Command:** `docker`
+- **Arguments:** `run -i --rm -v psxdata-cache:/home/app/.psxdata mtauha/psxdata-mcp:latest`
+- **Transport:** stdio (no URL, no port, no environment variables, no API key)
+
+If the client takes a JSON config with an `mcpServers` key, the Claude Desktop entry above works as is.
+
+## Try it
+
+Start a new chat and ask something that needs PSX data:
+
+- *"Load the KSE-100 constituents and show me the ten biggest weights."*
+- *"Compare OGDC, PPL and MARI over the last year."*
+- *"Which banks have a P/E under 5 and a dividend yield over 10%?"*
+
+You should see the assistant call `load_index`, `load_prices` or `load_screener`, then `query`. If it answers from memory instead, mention psxdata by name (*"use the psxdata tools"*) or check that the server is connected.
+
+For a structured report, run one of the [skills](/mcp/skills), for example the `tearsheet` prompt with `OGDC`.
+
+## Updating
+
+With `:latest`, pull the new image and start a new session:
+
+```bash
+docker pull mtauha/psxdata-mcp:latest
+```
+
+If you pinned a version, change the tag in your client config. To update the Claude Code plugin, refresh the marketplace and then the plugin:
+
+```bash
+claude plugin marketplace update psxdata-mcp
+```
+
+```bash
+claude plugin update psxdata@psxdata-mcp
+```
+
+To update the Claude Desktop bundle, install the newer `.mcpb` from the [releases page](https://github.com/psxdata/psxdata-mcp/releases).
+
+## Test the server on its own
+
+To check the server without an AI client, open it in the [MCP Inspector](https://github.com/modelcontextprotocol/inspector) (needs Node.js):
+
+```bash
+npx @modelcontextprotocol/inspector docker run -i --rm -v psxdata-cache:/home/app/.psxdata mtauha/psxdata-mcp:latest
+```
+
+It opens a browser UI where you can list the tools, call `load_screener`, then run `query` with `SELECT * FROM screener LIMIT 5`.
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="The client says the server failed to start or disconnected">
+    Make sure Docker is running (`docker info`), then run the `docker run` command above in a terminal. It should start and wait silently for input; press `Ctrl+C` to stop it. If it prints a Docker error instead, fix that first. Also check that the config has no `-t` flag.
+  </Accordion>
+  <Accordion title="`docker` is not found">
+    GUI apps such as Claude Desktop sometimes don't see the same `PATH` as your terminal. Use the full path to the Docker binary as the command, for example `/usr/local/bin/docker` on macOS or `C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.exe` on Windows (backslashes doubled inside JSON).
+  </Accordion>
+  <Accordion title="The first session is slow">
+    The first run pulls the image, and the first load of each symbol downloads its full price history from PSX. Later sessions reuse the image and the `psxdata-cache` volume. Pull the image ahead of time with `docker pull mtauha/psxdata-mcp:latest`.
+  </Accordion>
+  <Accordion title="&quot;PSX is rate-limiting requests&quot;">
+    PSX throttles bursts of requests. Wait a minute and ask again. Loading fewer symbols per call helps.
+  </Accordion>
+  <Accordion title="The data I loaded earlier is gone">
+    Tables live in memory and reset when the session ends. Ask the assistant to load them again; historical prices come from the cache, so this is quick.
+  </Accordion>
+  <Accordion title="Reset the price cache">
+    Remove the volume and the next session rebuilds it:
+
+    ```bash
+    docker volume rm psxdata-cache
+    ```
+  </Accordion>
+</AccordionGroup>

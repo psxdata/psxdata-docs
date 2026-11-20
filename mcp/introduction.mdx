@@ -1,0 +1,62 @@
+---
+title: "Introduction"
+description: "psxdata-mcp is a local MCP server that lets AI assistants load Pakistan Stock Exchange data into DuckDB and answer questions with SQL."
+---
+
+`psxdata-mcp` is a [Model Context Protocol](https://modelcontextprotocol.io) (MCP) server that gives AI assistants Pakistan Stock Exchange data. It runs on your machine in Docker, is built on the [psxdata Python SDK](/sdk/getting-started), and works with any MCP client: Claude Code, Claude Desktop, Cursor, VS Code, Windsurf, Codex, Gemini CLI and others.
+
+Ask questions in plain language and the assistant does the rest:
+
+- *"How has OGDC done against the KSE-100 constituents this year?"*
+- *"Which cement stocks have a P/E under 6?"*
+- *"Write me a market wrap for today."*
+
+## How it works
+
+<Steps>
+  <Step title="The assistant loads data">
+    It calls a `load_*` tool, for example `load_prices(["OGDC", "PPL"])` or `load_index("KSE100")`. The server fetches the data from PSX through the psxdata SDK and writes it to a table in a private, in-memory [DuckDB](https://duckdb.org) database.
+  </Step>
+  <Step title="The assistant queries it with SQL">
+    It answers your question with `query(sql)`: returns, averages, rankings and joins all run in DuckDB, and only the result (at most 200 rows) comes back to the model.
+  </Step>
+  <Step title="Everything resets at the end of the session">
+    Loaded tables live in memory and disappear when the assistant session ends. Historical prices are cached on disk in a Docker volume, so the next session loads them without downloading again.
+  </Step>
+</Steps>
+
+Because the model works with SQL over a local table instead of reading raw data into its context, it can analyse years of daily prices for dozens of symbols in a few tool calls.
+
+## What's available
+
+| Table | Loaded by | Contents |
+|---|---|---|
+| `prices` | `load_prices` | Daily OHLCV per symbol (PKR, unadjusted) |
+| `screener` | `load_screener` | Every listed symbol with sector, price, market cap, P/E, dividend yield, free float, 1-year change |
+| `index_constituents` | `load_index` | Constituents and weights of KSE100, KSE30, KMI30 and the other PSX indices |
+| `sectors` | `load_sectors` | Advances, declines, turnover and market cap for all 37 sectors |
+| `fundamentals` | `load_fundamentals` | Filed financial reports: year, type, period, posting date, document link |
+| `symbols` | `load_symbols` | All listed symbols with company name, sector and ETF/debt/GEM flags |
+| `debt_market` | `load_debt_market` | TFCs, Sukuks and government securities |
+| `eligible_scrips` | `load_eligible_scrips` | Margin-trading eligible scrips by market |
+
+See the [tools reference](/mcp/tools) for every tool and its limits, and [skills](/mcp/skills) for the ready-made analysis workflows (tearsheet, screen, compare, market wrap) that ship with the server.
+
+## Requirements
+
+- [Docker](https://docs.docker.com/get-docker/) (Docker Desktop on macOS and Windows). The image is `mtauha/psxdata-mcp` on Docker Hub.
+- An MCP client. Setup instructions for the common ones are in [Local setup](/mcp/setup).
+
+The Claude Desktop one-click bundle is the one exception: it runs on [uv](https://docs.astral.sh/uv/) instead of Docker.
+
+## Good to know
+
+- **Prices are in PKR and not adjusted** for splits, bonus issues or dividends. A bonus issue shows up as a sudden price drop. The bundled [playbook](/mcp/skills#psx-playbook) tells the assistant how to handle this.
+- **Live data is a 15-minute snapshot.** The screener, sector summary and quotes refresh every 15 minutes. Historical prices are cached in the `psxdata-cache` Docker volume and downloaded once per symbol.
+- **Data is scraped from the public PSX website.** It isn't an official feed, and the server tells the assistant to treat table contents as data, never as instructions.
+- **Queries are sandboxed.** DuckDB runs in memory with file and network access disabled, a 1 GB memory limit, 2 threads and a 30-second timeout per query. The assistant can create its own views and tables but can't read or write files on your machine.
+- **No API key, no account.** The server talks to PSX directly from your machine, so the [REST API](/rest-api/introduction) rate limit doesn't apply.
+
+<Card title="Set it up" icon="rocket" href="/mcp/setup">
+  Install the server and connect it to your assistant in a couple of minutes.
+</Card>

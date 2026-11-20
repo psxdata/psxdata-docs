@@ -160,7 +160,11 @@ Ready to build something? Continue with the [quickstart guide](/rest-api/guides/
 
 ## Using the API with LLM agents
 
-The REST API is public, unauthenticated, and described by an OpenAPI 3.1 specification, so it can be exposed to any LLM that supports tool or function calling. There is no dedicated MCP server or first-party LLM integration in this repository. Point the model at the OpenAPI spec and it can call the endpoints directly.
+<Tip>
+For AI assistants such as Claude, Cursor or VS Code, the [psxdata MCP server](/mcp/introduction) is usually the better fit: it runs locally, loads PSX data into DuckDB so the assistant can analyse it with SQL, and isn't subject to this API's rate limit.
+</Tip>
+
+The REST API is public, unauthenticated, and described by an OpenAPI 3.1 specification, so it can also be exposed to any LLM that supports tool or function calling. Point the model at the OpenAPI spec and it can call the endpoints directly.
 
 - **OpenAPI spec:** `https://raw.githubusercontent.com/psxdata/psxdata-docs/master/openapi.json`
 - **Base URL:** `https://psxdata-api.fastapicloud.dev`
