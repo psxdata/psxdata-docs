@@ -99,6 +99,24 @@
             ]
           }
         ]
+      },
+      {
+        "tab": "MCP Server",
+        "icon": "/images/mcp.svg",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": ["mcp/introduction"]
+          },
+          {
+            "group": "Guides",
+            "pages": ["mcp/setup"]
+          },
+          {
+            "group": "Reference",
+            "pages": ["mcp/tools", "mcp/skills"]
+          }
+        ]
       }
     ]
   }

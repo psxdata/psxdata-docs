@@ -1,0 +1,15 @@
+/* Custom SVG tab icons render as <img>; paint them with the tab's text color so they match the built-in icons in light and dark mode. */
+img[src$="/images/mcp.svg"] {
+  background-color: currentColor !important;
+  -webkit-mask: url("/images/mcp.svg") center / contain no-repeat;
+  mask: url("/images/mcp.svg") center / contain no-repeat;
+  object-position: -9999px 0;
+}
+
+/* Code blocks sit on the page like the rest of the content instead of on their own panel, so they follow the theme and its background gradient. */
+.code-block,
+.code-block [class*="bg-codeblock"] {
+  --shiki-dark-bg: transparent !important;
+  --shiki-light-bg: transparent !important;
+  background-color: transparent !important;
+}

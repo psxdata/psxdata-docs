@@ -1,0 +1,136 @@
+---
+title: "Tools reference"
+description: "Every tool the psxdata MCP server exposes: the load_* tools, query, list_tables and quote, with their arguments and limits."
+---
+
+The server exposes eleven tools. Eight `load_*` tools fetch PSX data into DuckDB tables; `query`, `list_tables` and `quote` read it. Your assistant picks the tools itself. This page is for when you want to know what it's doing, or need to steer it.
+
+| Tool | What it does | Table |
+|---|---|---|
+| [`load_prices(symbols, start?, end?)`](#load_prices) | Daily OHLCV for up to 50 symbols | `prices` |
+| [`load_screener()`](#load_screener) | Every listed symbol with price, P/E, dividend yield, market cap | `screener` |
+| [`load_index(name)`](#load_index) | Constituents and weights of a PSX index | `index_constituents` |
+| [`load_sectors()`](#load_sectors) | 37-sector summary | `sectors` |
+| [`load_fundamentals(symbols?)`](#load_fundamentals) | List of filed financial reports | `fundamentals` |
+| [`load_symbols()`](#load_symbols) | All listed symbols with name and sector | `symbols` |
+| [`load_debt_market()`](#load_debt_market) | TFCs, Sukuks, government securities | `debt_market` |
+| [`load_eligible_scrips()`](#load_eligible_scrips) | Margin-eligible scrips by market | `eligible_scrips` |
+| [`query(sql)`](#query) | DuckDB SQL over the loaded tables | — |
+| [`list_tables()`](#list_tables) | What's loaded, row counts, load time | — |
+| [`quote(symbol)`](#quote) | Latest snapshot for one symbol | — |
+
+Column names are lower `snake_case`. To see a table's columns, the assistant runs `query("DESCRIBE prices")`.
+
+## Loading data
+
+### load_prices
+
+Loads daily OHLCV prices for up to **50 symbols** per call into `prices`.
+
+| Argument | Type | Description |
+|---|---|---|
+| `symbols` | list of strings | PSX tickers, e.g. `["OGDC", "PPL"]`. Case-insensitive; duplicates are dropped. |
+| `start` | date, optional | First date (`YYYY-MM-DD`). Omit for the full history. |
+| `end` | date, optional | Last date. Omit for up to today. |
+
+- Re-loading a symbol replaces all of that symbol's rows; other symbols are kept.
+- Unknown symbols, and symbols with no data in the range, are reported as failures while the rest still load.
+- Prices are in PKR and **not adjusted** for splits, bonus issues or dividends.
+- Rows where `is_anomaly` is true failed OHLC validation; exclude them from analysis.
+
+### load_screener
+
+Loads the full PSX screener into `screener`: sector, price, market cap, P/E, dividend yield, free float, 30-day average volume, 1-year change, `traded_today` and `ex_flag` for every listed symbol. This is where valuation metrics live. It's a 15-minute snapshot.
+
+- `traded_today` is true if the symbol has traded on the PSX board so far this session, false if not, NULL if unknown. PSX keeps delisted and non-trading symbols in the screener with their last trading day's price and move, so filter on `traded_today` before ranking daily gainers, losers or most-traded stocks.
+- `ex_flag` is `XD` (ex-dividend), `XB` (ex-bonus) or `XR` (ex-rights) when PSX shows that badge, otherwise NULL. A stock that goes ex drops by roughly the entitlement without a real loss.
+
+### load_index
+
+Loads the constituents and weights of one PSX index into `index_constituents`, including each constituent's `ex_flag`.
+
+| Argument | Type | Description |
+|---|---|---|
+| `name` | string | Index name, e.g. `KSE100`, `KSE30`, `KMI30`, `KMIALLSHR`. An unknown name returns the list of valid ones. |
+
+Loading another index adds its rows; re-loading an index replaces only that index's rows. Filter by `index_name` when several are loaded.
+
+### load_sectors
+
+Loads the sector summary into `sectors`: advances, declines, turnover and market cap for all 37 sectors. 15-minute snapshot.
+
+### load_fundamentals
+
+Loads the list of filed financial reports into `fundamentals`: year, report type, period, posting date and a link to the document. These are filings, **not** valuation metrics; P/E and dividend yield are in `screener`.
+
+| Argument | Type | Description |
+|---|---|---|
+| `symbols` | list of strings, optional | Limit to these tickers. Omit to load filings for every company. |
+
+### load_symbols
+
+Loads every listed symbol with company name, sector and ETF/debt/GEM flags into `symbols`.
+
+### load_debt_market
+
+Loads PSX debt instruments into `debt_market`: face value, issue and maturity dates, coupon rate. The `category` column names the instrument group: `GoP Ijarah Sukuk`, `Public Debt Securities`, `Privately Debt Securities` or `Government Debt Securities`.
+
+### load_eligible_scrips
+
+Loads margin-trading eligible scrips into `eligible_scrips`, with the market in the `category` column (for example `Regular Deliverable Equity Market` or `Future Deliverable Contract Market`).
+
+<Note>
+If PSX returns no data for a snapshot (for example outside market hours or during an outage), the server keeps the previously loaded table instead of wiping it, and tells the assistant when that data was loaded.
+</Note>
+
+## Reading data
+
+### query
+
+Runs DuckDB SQL over the loaded tables and returns the result as a Markdown table.
+
+| Argument | Type | Description |
+|---|---|---|
+| `sql` | string | Any DuckDB SQL statement. |
+
+Limits:
+
+- At most **200 rows** are returned. Larger results report how many rows were cut, so the assistant knows to aggregate or add `LIMIT`.
+- Each query is cancelled after **30 seconds**.
+- Cells longer than 100 characters are truncated.
+- File and network access are disabled, extensions can't be installed, and the sandbox settings can't be changed from SQL. `CREATE VIEW` and `CREATE TABLE` work, so the assistant can build intermediate results.
+
+A typical query the assistant writes after `load_prices(["OGDC", "PPL", "MARI"], start="2026-01-01")`:
+
+```sql
+SELECT symbol,
+       round(100 * (last(close ORDER BY date) / first(close ORDER BY date) - 1), 1) AS ytd_return_pct
+FROM prices
+WHERE NOT is_anomaly
+GROUP BY symbol
+ORDER BY ytd_return_pct DESC;
+```
+
+### list_tables
+
+Lists the loaded tables with row counts and load time (UTC), plus any views the assistant created. It doesn't list columns; use `query("DESCRIBE <table>")` for those.
+
+### quote
+
+Returns the latest snapshot for one symbol (price, sector, market cap, P/E, dividend yield, 1-year change) without creating a table. Handy for a quick check on a single stock.
+
+| Argument | Type | Description |
+|---|---|---|
+| `symbol` | string | PSX ticker, e.g. `OGDC`. |
+
+## Errors
+
+Tool errors come back to the assistant as plain messages it can act on:
+
+| Message | What happened |
+|---|---|
+| `PSX is rate-limiting requests — wait a minute and retry` | PSX throttled the server. Waiting a minute fixes it. |
+| `PSX unreachable after retries — try again later` | The PSX website didn't respond. |
+| `At most 50 symbols per call` | Split the symbols across several `load_prices` calls. |
+| `Unknown index '…'. Valid: …` | The index name isn't one PSX publishes. |
+| `query cancelled after 30s — simplify or add filters` | The query hit the timeout. |
