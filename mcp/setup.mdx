@@ -3,30 +3,34 @@ title: "Local setup"
 description: "Run the psxdata MCP server locally with Docker and connect it to Claude Code, Claude Desktop, Cursor, VS Code, Windsurf, Codex, Gemini CLI or any other MCP client."
 ---
 
+import { AgentPrompt } from "/snippets/agent-prompt.jsx";
+
 The server runs on your machine as a Docker container that your MCP client starts on demand. You don't run it yourself or keep it running: you add one entry to your client's MCP config, and the client launches the container when a session starts and stops it when the session ends.
 
 ## Let your agent set it up
 
-Copy this prompt into the coding agent you want to connect (Claude Code, Cursor, VS Code, Windsurf, Codex, Gemini CLI or another one) and it does the setup for you. The rest of this page is the same setup by hand.
+Pick your agent, then copy the prompt into it, or open it there directly, and the agent does the setup for you. Use **Show prompt** to read exactly what it will do. The rest of this page is the same setup by hand.
 
-<Prompt description="Set up the psxdata MCP server in this agent" icon="clipboard" actions={["copy", "cursor"]}>
-Set up the psxdata MCP server (Pakistan Stock Exchange data) for yourself, the agent I'm talking to right now. Docs: https://psxdata.mintlify.app/mcp/setup
+<Tabs>
+  <Tab title="Claude Code">
+    <AgentPrompt agent="claude" />
 
-1. Check that Docker is installed and running with `docker info`. If it isn't, stop and tell me to install or start Docker Desktop.
-2. Pull the image: `docker pull mtauha/psxdata-mcp:latest`
-3. Work out which MCP client you are and add a stdio server named `psxdata` to your own MCP configuration, available in all my projects (user scope), using:
-   - command: `docker`
-   - args: `["run", "-i", "--rm", "-v", "psxdata-cache:/home/app/.psxdata", "mtauha/psxdata-mcp:latest"]`
+    The link opens Claude Code in a new terminal. It works once you've used Claude Code interactively at least once on this machine.
+  </Tab>
+  <Tab title="Codex">
+    <AgentPrompt agent="codex" />
 
-   Use your client's own command where it has one:
-   - Claude Code: `claude plugin marketplace add psxdata/psxdata-mcp` then `claude plugin install psxdata@psxdata-mcp`
-   - Codex: `codex mcp add psxdata -- docker run -i --rm -v psxdata-cache:/home/app/.psxdata mtauha/psxdata-mcp:latest`
-   - Gemini CLI: `gemini mcp add --scope user psxdata -- docker run -i --rm -v psxdata-cache:/home/app/.psxdata mtauha/psxdata-mcp:latest`
+    The link opens the Codex app. If you use the Codex CLI instead, copy the prompt.
+  </Tab>
+  <Tab title="Cursor">
+    <AgentPrompt agent="cursor" />
+  </Tab>
+  <Tab title="Other agents">
+    <AgentPrompt agent="other" />
 
-   Otherwise edit the config file: `~/.cursor/mcp.json` for Cursor, the user `mcp.json` (key `servers`, with `"type": "stdio"`) for VS Code, `~/.codeium/windsurf/mcp_config.json` for Windsurf, or the `mcpServers` section of your own config file. Keep every existing entry, never add `-t` to the Docker args, and if a `psxdata` entry already exists, show it to me and ask before replacing it.
-4. Tell me exactly what you changed, then whether I need to restart you or reload MCP servers before the psxdata tools show up.
-5. Once the tools are available, test them: call `load_index` with `KSE100`, then `query` with `SELECT symbol, idx_weight FROM index_constituents ORDER BY idx_weight DESC LIMIT 5`, and show me the result.
-</Prompt>
+    For VS Code, Windsurf, Gemini CLI and any other agent that can edit files and run commands.
+  </Tab>
+</Tabs>
 
 ## Before you start
 
