@@ -102,7 +102,7 @@
       },
       {
         "tab": "MCP Server",
-        "icon": "robot",
+        "icon": "/images/mcp.svg",
         "groups": [
           {
             "group": "Overview",
