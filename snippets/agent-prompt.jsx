@@ -1,4 +1,4 @@
-const DOCS = "https://psxdata.mintlify.app/mcp/setup";
+const DOCS = "https://docs.psxdata.org/mcp/setup";
 const IMAGE = "mtauha/psxdata-mcp:latest";
 const DOCKER_ARGS = `run -i --rm -v psxdata-cache:/home/app/.psxdata ${IMAGE}`;
 

@@ -22,6 +22,11 @@
   "background": {
     "decoration": "gradient"
   },
+  "seo": {
+    "metatags": {
+      "canonical": "https://docs.psxdata.org"
+    }
+  },
   "navbar": {
     "links": [
       { "type": "github", "href": "https://github.com/psxdata/psxdata" }
