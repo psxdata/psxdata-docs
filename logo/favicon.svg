@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="36 46 248 248" width="248" height="248">
+  <defs>
+    <linearGradient id="psxdata-g" x1="0" y1="30" x2="0" y2="280" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#6EE7B7"/>
+      <stop offset="1" stop-color="#10B981"/>
+    </linearGradient>
+    <clipPath id="psxdata-c"><circle cx="160" cy="154" r="118"/></clipPath>
+  </defs>
+  <g clip-path="url(#psxdata-c)">
+    <path d="M20 96C60 96 82 194 122 194C162 194 172 100 198 100C214 100 216 130 230 130C248 130 264 62 300 26L300 320L20 320Z" fill="url(#psxdata-g)"/>
+  </g>
+</svg>
