@@ -29,6 +29,7 @@
   },
   "navbar": {
     "links": [
+      { "label": "psxdata.org", "href": "https://psxdata.org" },
       { "type": "github", "href": "https://github.com/psxdata/psxdata" }
     ]
   },
